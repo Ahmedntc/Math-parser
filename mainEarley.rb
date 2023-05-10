@@ -15,7 +15,7 @@ regras = [
     Regra.new('E',   %w[NEG]),
     #NEGATIVO
     Regra.new('N',   %w[NEG N]),
-    Regra.new('N',   %w[T]),
+    Regra.new('N',   %w[P]),
     #PARÊNTESES
     Regra.new('P',   %w[( S )]),
     Regra.new('P',   %w[D]),
