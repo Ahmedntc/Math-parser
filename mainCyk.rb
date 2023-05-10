@@ -1,6 +1,5 @@
 require_relative 'utils/cyk'
 require_relative 'utils/gramatica'
-require_relative 'utils/earley'
 
 regras = [
   # Chomsky
@@ -63,9 +62,13 @@ regras = [
 ]
 
 
+
+
+
 gramatica = Gramatica.new(regras, 'S')
 
-parser = CYKParser.new(gramatica)
+
+parser =  CYKParser.new(gramatica)
 
 # DEVEM SER ACEITAS
 conta = '(1+4)*2^4'

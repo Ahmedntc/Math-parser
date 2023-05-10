@@ -1,10 +1,13 @@
-class Estado
-  attr_accessor :regra, :ponto, :inicio
+require 'tty-table'
 
-  def initialize(regra, ponto, inicio)
+class Estado
+  attr_accessor :regra, :ponto, :inicio, :comentario
+
+  def initialize(regra, ponto, inicio, comentario = '')
     @regra = regra
     @ponto = ponto
-    @inicio = inicio
+    @inicio = inicio # estado de Origem
+    @comentario = comentario
   end
 
   def completo?
@@ -15,8 +18,13 @@ class Estado
     regra.direita[ponto]
   end
 
-  def advance
-    Estado.new(regra, ponto + 1, inicio)
+  def advance(k, regra_anterior)
+    Estado.new(regra, ponto + 1, inicio, "Scan de S(#{k})(#{regra_anterior})")
+  end
+
+  def complete(k, regra1, regra2)
+    puts k, regra1, regra2
+    Estado.new(regra, ponto + 1, inicio, "Completo de #{regra1} e S(#{k})(#{regra2})")
   end
 
   def ==(other)
@@ -32,18 +40,19 @@ class Estado
   end
 
   def to_s
-    direita = @regra.direita.join.insert(ponto, ".")
-    "Estado: #{@regra.esquerda} -> #{direita}"
+    direita = @regra.direita.join.insert(ponto, '.')
+    "#{@regra.esquerda} -> #{direita}"
   end
 end
 
 class S
   attr_reader :estados, :estados_visitados
 
-  def initialize(index)
+  def initialize(index, entrada)
     @index = index
     @estados = Set.new
     @estados_visitados = Set.new
+    @entrada = entrada
   end
 
   def <<(element)
@@ -61,10 +70,13 @@ class S
   end
 
   def to_s
-    output = "==== Tabela #{@index} ====\n"
-    estados.each do |regra|
-      output << regra.to_s + "\n"
+    table = TTY::Table.new(header: %w[Estado Origem Comentário])
+    expressao = @entrada.split('').join.insert(@index, '.')
+
+    estados.each do |estado|
+      table << [estado, estado.inicio, estado.comentario]
     end
-    output + "==================\n" 
+
+    "==== S(#{@index}): #{expressao} ====\n#{table.render(:ascii, alignments: [:left, :center, :left])}\n"
   end
 end

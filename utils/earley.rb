@@ -4,11 +4,9 @@ require_relative 'estado'
 
 
 class EarleyParser
-  attr_reader :gramatica, :pastel
+  attr_reader :gramatica
   
   def initialize(gramatica)
-    @pastel = Pastel.new
-    
     @gramatica = gramatica
     # Parser de Early precisa de um uma regra S->S
     # para o primeiro passo, assim, adicionamos 
@@ -20,38 +18,38 @@ class EarleyParser
     # Lista de estado. Tem tamanho do entrada + 1
     # pq se o último tiver o estado inicial,
     # estará no entrada + 1
-    @tabela = Array.new(entrada.length + 1) { |index| S.new(index) }
+    @tabela = Array.new(entrada.length + 1) { |indice| S.new(indice, entrada) }
 
-    predict(Estado.new(@gramatica.regras[0], 0, 0), 0)
+    predict(Estado.new(@gramatica.regras[0], 0, 0, "Regra inicial"), 0)
 
     puts "\nLendo os caracteres... \n\n"
     
-    entrada.split('').each_with_index do |item, index|
-      puts pastel.red("Caracter: #{item}, Posição: #{index}")
+    #entrada.split('').each_with_index do |item, index|
+    (0..entrada.size).each do |index|
+      if (index == entrada.size)
+        puts "\n================ Posição: #{index} ================"
+      else
+        puts "\n==== Caracter: #{entrada[index]}, Posição: #{index} ========"
+      end
+      
       until @tabela[index].empty?
-        puts pastel.magenta(@tabela)
         estado = @tabela[index].take!
-        #puts(estado)
-        # if estado.completo?
-        #   complete(estado, index)
-        # elsif estado.next_symbol == item
-        #   scan(estado, index)
-        # else
-        #   predict(estado, index)
-        # end
         if estado.completo?
           complete(estado, index)
         else
-          # chega se próximo item é um não terminal
-          if estado.next_symbol == item 
-            predict(estado, index)
-          else
+          # checa se próximo item é um terminal
+          if estado.next_symbol == entrada[index] 
             scan(estado, index)
+          else
+            predict(estado, index)
           end
         end
       end
     end
 
+    puts "\n================ Fim de predição ================\n"
+
+    puts @tabela
     final_is_valid?(@tabela[entrada.length])
   end
 
@@ -63,25 +61,26 @@ class EarleyParser
 
   def predict(estado, index)
     @gramatica.regras.each do |regra|
-      puts pastel.green("[Predict] N: #{estado.next_symbol}, I: #{regra.esquerda}, Eq? #{estado.next_symbol == regra.esquerda }")
       if regra.esquerda == estado.next_symbol
-        puts "[Predict] esquerda: #{regra.esquerda}, próximo: #{estado.next_symbol}"
-        novo_estado = Estado.new(regra, 0, index)
+        novo_estado = Estado.new(regra, 0, index, "Predito de #{estado}")
         @tabela[index] << novo_estado
-        puts "[Predict] Adicionando regra #{novo_estado}"
+        puts pastel.green("[Predict] Adicionando regra #{novo_estado} de Esquerda: #{regra.esquerda} e próximo símbolo: #{estado.next_symbol}")
       end
     end
   end
 
   def scan(estado, index)
-    puts pastel.green "[Scan] Proximo estado: #{estado.advance}"
-    @tabela[index + 1] << estado.advance
+    prox_estado = estado.advance(index, estado)
+    puts "[Scan] Proximo estado: #{prox_estado} em S(#{index+1})"
+    @tabela[index + 1] << prox_estado
   end
 
   def complete(estado, index)
     @tabela[estado.inicio].estados.each do |estado_candidato|
-      puts pastel.cyan "[Complete] Estado Candidato: #{estado_candidato}"
-      @tabela[index] << estado_candidato.advance if estado_candidato.next_symbol == estado.regra.esquerda
+      if estado_candidato.next_symbol == estado.regra.esquerda
+        puts "[Complete] Estado Candidato: #{estado_candidato}"
+        @tabela[index] << estado_candidato.complete(index-1,estado, estado_candidato)
+      end
     end
   end
 end
